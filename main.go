@@ -1,17 +1,16 @@
 package main
 
 import (
-	"database/sql"
-
 	"fmt"
 	"log"
+
+	"github.com/torives/png/repo"
 
 	_ "modernc.org/sqlite"
 )
 
 func main() {
-	fmt.Println("Hello world")
-	db, err := sql.Open("sqlite", "./png.db")
+	db, err := repo.Open("./png.db")
 	if err != nil {
 		log.Fatal(err)
 	}
