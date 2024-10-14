@@ -3,13 +3,14 @@ package repo
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
 
 type PngDatabase interface {
 	AddCategory(category string) error
-	NextProjectId(category string) (int, error)
+	NextProjectId(category string) (int64, error)
 	Close()
 }
 
@@ -40,9 +41,21 @@ func (pDb *pngDb) AddCategory(category string) error {
 	return nil
 }
 
-// TODO: add implementation
-func (pDb *pngDb) NextProjectId(category string) (int, error) {
-	return 0, nil
+func (pDb *pngDb) NextProjectId(category string) (int64, error) {
+	//FIXME: sanitize input
+	query := fmt.Sprintf(`INSERT INTO %s VALUES (null, %d)`, category, time.Now().Unix())
+	result, err := pDb.db.Exec(query)
+
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return -1, err
+	}
+
+	return id, nil
 }
 
 func (pDb *pngDb) Close() {
