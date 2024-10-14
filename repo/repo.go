@@ -2,6 +2,7 @@ package repo
 
 import (
 	"database/sql"
+	"fmt"
 
 	_ "modernc.org/sqlite"
 )
@@ -25,8 +26,17 @@ func Open(path string) (PngDatabase, error) {
 	return &pngDb{db}, nil
 }
 
-// TODO: add implementation
 func (pDb *pngDb) AddCategory(category string) error {
+	//FIXME: sanitize input
+	query := fmt.Sprintf(
+		`CREATE TABLE %s(id INTEGER PRIMARY KEY NOT NULL, date INTEGER)`,
+		category,
+	)
+
+	_, err := pDb.db.Exec(query)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
