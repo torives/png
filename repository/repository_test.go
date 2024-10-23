@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/torives/png/model"
@@ -134,4 +135,85 @@ func TestRepository(t *testing.T) {
 			t.Fatalf("unexpected success. %s", err)
 		}
 	})
+
+	t.Run("itCreatesANewProject", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		project, err := repo.CreateNewProject(model.Team{Name: "FOR"}, model.WorkType{Name: "MA"})
+		if err != nil {
+			t.Fatalf("unexpected failure. %s", err)
+		}
+
+		expectedName := "FOR-MA-1"
+		if project.Name != expectedName {
+			t.Fatalf("expected project name to be %s, got %s", expectedName, project.Name)
+		}
+	})
+
+	t.Run("itCreatesANewProjectWhenTeamAndWorkTypeAreTheSame", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		team := model.Team{Name: "FOR"}
+		workType := model.WorkType{Name: "MA"}
+		project1, err := repo.CreateNewProject(team, workType)
+		if err != nil {
+			t.Fatalf("unexpected failure. %s", err)
+		}
+
+		project2, err := repo.CreateNewProject(team, workType)
+		if err != nil {
+			t.Fatalf("unexpected failure. %s", err)
+		}
+
+		if project1.Name == project2.Name {
+			t.Fatalf("expected project names to be different. %s", project1.Name)
+		}
+	})
+
+	t.Run("itIncrementsProjectIdByOneForTheSameTeamAndWorkType", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		team := model.Team{Name: "FOR"}
+		workType := model.WorkType{Name: "MA"}
+		project1, err := repo.CreateNewProject(team, workType)
+		if err != nil {
+			t.Fatalf("unexpected failure. %s", err)
+		}
+
+		project2, err := repo.CreateNewProject(team, workType)
+		if err != nil {
+			t.Fatalf("unexpected failure. %s", err)
+		}
+
+		project1Id, err := idFromProjectName(project1.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		project2Id, err := idFromProjectName(project2.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if project2Id != project1Id+1 {
+			t.Fatalf("expected second id to be %d, but got %d", project1Id+1, project2Id)
+		}
+	})
+}
+
+func idFromProjectName(name string) (int64, error) {
+	projectIdStr := name[len(name)-1:]
+	projectId, err := strconv.ParseInt(projectIdStr, 10, 64)
+	if err != nil {
+		return -1, err
+	}
+	return projectId, nil
 }
