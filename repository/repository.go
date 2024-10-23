@@ -168,6 +168,10 @@ func (r SqlitePngRepository) insertInitialData() error {
 }
 
 func (r SqlitePngRepository) InsertTeam(team model.Team) error {
+	_, err := r.db.Exec(insertTeamSql, team.Name)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
