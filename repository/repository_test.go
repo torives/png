@@ -3,6 +3,8 @@ package repository
 import (
 	"fmt"
 	"testing"
+
+	"github.com/torives/png/model"
 )
 
 var testDsn = "file::memory:?&_pragma=foreign_keys(1)"
@@ -46,6 +48,48 @@ func TestRepository(t *testing.T) {
 		expectedWorkTypeCount := 5
 		if len(workTypes) != expectedWorkTypeCount {
 			t.Fatalf("expected %d teams, got %d", expectedWorkTypeCount, len(teams))
+		}
+	})
+
+	t.Run("itInsertsANewTeam", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		teams, err := repo.ListTeams()
+		if err != nil {
+			t.Fatal(err)
+		}
+		previousTeamCount := len(teams)
+
+		team := model.Team{Name: "TRT"}
+		err = repo.InsertTeam(team)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		currentTeams, err := repo.ListTeams()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedTeamCount := previousTeamCount + 1
+		if len(currentTeams) != expectedTeamCount {
+			t.Fatalf("expected %d teams, got: %d", expectedTeamCount, len(currentTeams))
+		}
+	})
+
+	t.Run("itFailsToInsertADuplicateTeam", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		team := model.Team{Name: "FOR"}
+		err = repo.InsertTeam(team)
+		if err == nil {
+			t.Fatalf("expected failure. %s", err)
 		}
 	})
 }
