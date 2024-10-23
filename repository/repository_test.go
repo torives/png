@@ -89,7 +89,49 @@ func TestRepository(t *testing.T) {
 		team := model.Team{Name: "FOR"}
 		err = repo.InsertTeam(team)
 		if err == nil {
-			t.Fatalf("expected failure. %s", err)
+			t.Fatalf("unexpected success. %s", err)
+		}
+	})
+
+	t.Run("itInsertsANewWorkType", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		workTypes, err := repo.ListWorkTypes()
+		if err != nil {
+			t.Fatal(err)
+		}
+		previousWorkTypeCount := len(workTypes)
+
+		workType := model.WorkType{Name: "ZZ"}
+		err = repo.InsertWorkType(workType)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		currentWorkTypes, err := repo.ListWorkTypes()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedWorkTypeCount := previousWorkTypeCount + 1
+		if len(currentWorkTypes) != expectedWorkTypeCount {
+			t.Fatalf("expected %d work types, got: %d", expectedWorkTypeCount, len(currentWorkTypes))
+		}
+	})
+
+	t.Run("itFailsToInsertADuplicateWorkType", func(t *testing.T) {
+		repo, err := NewSqlitePngRepository(testDsn)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		workType := model.WorkType{Name: "MA"}
+		err = repo.InsertWorkType(workType)
+		if err == nil {
+			t.Fatalf("unexpected success. %s", err)
 		}
 	})
 }
