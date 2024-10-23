@@ -14,7 +14,7 @@ type PngRepository interface {
 	ListTeams() (teams []model.Team, err error)
 	InsertWorkType(workType model.WorkType) error
 	ListWorkTypes() (workTypes []model.WorkType, err error)
-	CreateNewProject(team model.Team, workType model.WorkType) (id int64, err error)
+	CreateNewProject(team model.Team, workType model.WorkType) (project model.Project, err error)
 }
 
 type SqlitePngRepository struct {
@@ -45,7 +45,7 @@ var (
 	createWorkTypeFkIndexSql = `CREATE INDEX IF NOT EXISTS work_type_index ON projects(team)`
 	insertTeamSql            = `INSERT INTO teams VALUES(NULL, $1)`
 	insertWorkTypeSql        = `INSERT INTO work_types VALUES(NULL, $1)`
-	insertProjectSql         = `INSERT INTO projects VALUES(NULL, $1, $2, $3)`
+	insertProjectSql         = `INSERT INTO projects VALUES(NULL, $1, $2) RETURNING id`
 	//TODO: find out why parameter substitution does not work with SELECT statements
 	listAllTeamsSql     = `SELECT name FROM teams`
 	listAllWorkTypesSql = `SELECT name FROM work_types`
@@ -218,6 +218,16 @@ func (r SqlitePngRepository) ListWorkTypes() (workTypes []model.WorkType, err er
 func (r SqlitePngRepository) CreateNewProject(
 	team model.Team,
 	workType model.WorkType,
-) (id int64, err error) {
-	return -1, nil
+) (project model.Project, err error) {
+	result, err := r.db.Exec(insertProjectSql, team.Name, workType.Name)
+	if err != nil {
+		return project, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return project, err
+	}
+
+	return model.NewProject(id, team.Name, workType.Name), nil
 }

@@ -61,3 +61,11 @@ func isValidWorkTypeName(name string) bool {
 	}
 	return match
 }
+
+type Project struct {
+	Name string
+}
+
+func NewProject(id int64, team string, workType string) Project {
+	return Project{fmt.Sprintf("%s-%s-%d", team, workType, id)}
+}
