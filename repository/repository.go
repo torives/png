@@ -192,6 +192,10 @@ func (r SqlitePngRepository) ListTeams() (teams []model.Team, err error) {
 }
 
 func (r SqlitePngRepository) InsertWorkType(workType model.WorkType) error {
+	_, err := r.db.Exec(insertWorkTypeSql, workType.Name)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
