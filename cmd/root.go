@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var databaseDsn = "file:png.sqlite"
+
 var rootCmd = &cobra.Command{
 	Use:   "png",
 	Short: "Project Number Generator",
@@ -24,5 +26,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.DisableAutoGenTag = true
 }
