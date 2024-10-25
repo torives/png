@@ -13,7 +13,7 @@ var list = &cobra.Command{
 	Short: "list database contents",
 	Long: `The list command can be used to list all teams and work types present
 in the system`,
-	Args:      cobra.OnlyValidArgs,
+	Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs: []string{"teams", "worktypes"},
 	Run:       runList,
 }
