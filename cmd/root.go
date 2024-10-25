@@ -27,4 +27,5 @@ func Execute() {
 
 func init() {
 	rootCmd.DisableAutoGenTag = true
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 }
