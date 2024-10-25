@@ -69,3 +69,7 @@ type Project struct {
 func NewProject(id int64, team string, workType string) Project {
 	return Project{fmt.Sprintf("%s-%s-%d", team, workType, id)}
 }
+
+func (p Project) String() string {
+	return p.Name
+}
