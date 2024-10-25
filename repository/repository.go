@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/torives/png/model"
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
 )
 
 type PngRepository interface {
@@ -38,11 +38,11 @@ func NewSqlitePngRepository(dsn string) (*SqlitePngRepository, error) {
 }
 
 var (
-	createTeamsTableSql      = `CREATE TABLE IF NOT EXISTS teams(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(3) UNIQUE)`
-	createWorkTypesTableSql  = `CREATE TABLE IF NOT EXISTS work_types(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(2) UNIQUE)`
-	createProjectsTableSql   = `CREATE TABLE IF NOT EXISTS projects(id INTEGER PRIMARY KEY AUTOINCREMENT, team TEXT NOT NULL, work_type TEXT NOT NULL, FOREIGN KEY(team) REFERENCES teams(name) FOREIGN KEY(work_type) REFERENCES work_types(name))`
-	createTeamFkIndexSql     = `CREATE INDEX IF NOT EXISTS team_index ON projects(team)`
-	createWorkTypeFkIndexSql = `CREATE INDEX IF NOT EXISTS work_type_index ON projects(team)`
+	createTeamsTableSql      = `CREATE TABLE teams(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(3) UNIQUE)`
+	createWorkTypesTableSql  = `CREATE TABLE work_types(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(2) UNIQUE)`
+	createProjectsTableSql   = `CREATE TABLE projects(id INTEGER PRIMARY KEY AUTOINCREMENT, team TEXT NOT NULL, work_type TEXT NOT NULL, FOREIGN KEY(team) REFERENCES teams(name) FOREIGN KEY(work_type) REFERENCES work_types(name))`
+	createTeamFkIndexSql     = `CREATE INDEX team_index ON projects(team)`
+	createWorkTypeFkIndexSql = `CREATE INDEX work_type_index ON projects(team)`
 	insertTeamSql            = `INSERT INTO teams VALUES(NULL, $1)`
 	insertWorkTypeSql        = `INSERT INTO work_types VALUES(NULL, $1)`
 	insertProjectSql         = `INSERT INTO projects VALUES(NULL, $1, $2) RETURNING id`
@@ -51,117 +51,147 @@ var (
 	listAllWorkTypesSql = `SELECT name FROM work_types`
 )
 
-// TODO: add migration file/tooling?
+// FIXME: add migrations file/tooling
 func (r SqlitePngRepository) insertInitialData() error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 
+	var sqlErr *sqlite.Error
+
 	//create tables
 	_, err = tx.Exec(createTeamsTableSql)
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(createWorkTypesTableSql)
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(createProjectsTableSql)
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 
 	// create indexes
 	_, err = tx.Exec(createTeamFkIndexSql)
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(createWorkTypeFkIndexSql)
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 
 	// populate teams table
 	_, err = tx.Exec(insertTeamSql, "FOR")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertTeamSql, "ANA")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertTeamSql, "MIC")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertTeamSql, "PRO")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 
 	// populate work_type table
 	_, err = tx.Exec(insertWorkTypeSql, "MA")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertWorkTypeSql, "ES")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertWorkTypeSql, "IC")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertWorkTypeSql, "PT")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 	_, err = tx.Exec(insertWorkTypeSql, "PP")
 	if err != nil {
-		return errors.Join(
-			fmt.Errorf("tx exec: %w", err),
-			tx.Rollback(),
-		)
+		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
+			return errors.Join(
+				fmt.Errorf("tx exec: %w", err),
+				tx.Rollback(),
+			)
+		}
 	}
 
 	return tx.Commit()

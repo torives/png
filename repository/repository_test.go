@@ -8,6 +8,7 @@ import (
 	"github.com/torives/png/model"
 )
 
+// TODO: test with actual database files
 var testDsn = "file::memory:?&_pragma=foreign_keys(1)"
 
 func SetupError(err error) error {
