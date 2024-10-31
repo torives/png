@@ -26,11 +26,7 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("ItInsertsDefaultDataUponCreation", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer repo.db.Close()
+		repo := newSqliteRepository(t, testDsn)
 
 		teams, err := repo.ListTeams()
 		if err != nil {
@@ -54,10 +50,7 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("itInsertsANewTeam", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		teams, err := repo.ListTeams()
 		if err != nil {
@@ -83,23 +76,17 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("itFailsToInsertADuplicateTeam", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		team := model.Team{Name: "FOR"}
-		err = repo.InsertTeam(team)
+		err := repo.InsertTeam(team)
 		if err == nil {
 			t.Fatalf("unexpected success. %s", err)
 		}
 	})
 
 	t.Run("itInsertsANewWorkType", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		workTypes, err := repo.ListWorkTypes()
 		if err != nil {
@@ -110,7 +97,7 @@ func TestRepository(t *testing.T) {
 		workType := model.WorkType{Name: "ZZ"}
 		err = repo.InsertWorkType(workType)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("expected to insert a new worktype. %s", err)
 		}
 
 		currentWorkTypes, err := repo.ListWorkTypes()
@@ -125,27 +112,21 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("itFailsToInsertADuplicateWorkType", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		workType := model.WorkType{Name: "MA"}
-		err = repo.InsertWorkType(workType)
+		err := repo.InsertWorkType(workType)
 		if err == nil {
-			t.Fatalf("unexpected success. %s", err)
+			t.Fatal("expected insertion of duplicate worktype to fail, but it did not")
 		}
 	})
 
 	t.Run("itCreatesANewProject", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		project, err := repo.CreateNewProject(model.Team{Name: "FOR"}, model.WorkType{Name: "MA"})
 		if err != nil {
-			t.Fatalf("unexpected failure. %s", err)
+			t.Fatalf("expected project creation to succeed. %s", err)
 		}
 
 		expectedName := "FOR-MA-1"
@@ -155,66 +136,60 @@ func TestRepository(t *testing.T) {
 	})
 
 	t.Run("itCreatesANewProjectWhenTeamAndWorkTypeAreTheSame", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		team := model.Team{Name: "FOR"}
 		workType := model.WorkType{Name: "MA"}
-		project1, err := repo.CreateNewProject(team, workType)
-		if err != nil {
-			t.Fatalf("unexpected failure. %s", err)
-		}
-
-		project2, err := repo.CreateNewProject(team, workType)
-		if err != nil {
-			t.Fatalf("unexpected failure. %s", err)
-		}
+		project1 := createNewProject(t, repo, team, workType)
+		project2 := createNewProject(t, repo, team, workType)
 
 		if project1.Name == project2.Name {
-			t.Fatalf("expected project names to be different. %s", project1.Name)
+			t.Fatalf("expected projects %s and %s to have different names", project1.Name, project2.Name)
 		}
 	})
 
 	t.Run("itIncrementsProjectIdByOneForTheSameTeamAndWorkType", func(t *testing.T) {
-		repo, err := NewSqlitePngRepository(testDsn)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo := newSqliteRepository(t, testDsn)
 
 		team := model.Team{Name: "FOR"}
 		workType := model.WorkType{Name: "MA"}
-		project1, err := repo.CreateNewProject(team, workType)
-		if err != nil {
-			t.Fatalf("unexpected failure. %s", err)
-		}
+		project1 := createNewProject(t, repo, team, workType)
+		project2 := createNewProject(t, repo, team, workType)
 
-		project2, err := repo.CreateNewProject(team, workType)
-		if err != nil {
-			t.Fatalf("unexpected failure. %s", err)
-		}
-
-		project1Id, err := idFromProjectName(project1.Name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		project2Id, err := idFromProjectName(project2.Name)
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		project1Id := idFromProject(t, project1)
+		project2Id := idFromProject(t, project2)
 		if project2Id != project1Id+1 {
 			t.Fatalf("expected second id to be %d, but got %d", project1Id+1, project2Id)
 		}
 	})
 }
 
-func idFromProjectName(name string) (int64, error) {
-	projectIdStr := name[len(name)-1:]
+func idFromProject(t *testing.T, project model.Project) int64 {
+	projectIdStr := project.Name[len(project.Name)-1:]
 	projectId, err := strconv.ParseInt(projectIdStr, 10, 64)
 	if err != nil {
-		return -1, err
+		t.Fatalf("unexpected failure. %s", err)
 	}
-	return projectId, nil
+	return projectId
+}
+
+func createNewProject(
+	t *testing.T,
+	repo PngRepository,
+	team model.Team,
+	workType model.WorkType,
+) model.Project {
+	project, err := repo.CreateNewProject(team, workType)
+	if err != nil {
+		t.Fatalf("unexpected failure. %s", err)
+	}
+	return project
+}
+
+func newSqliteRepository(t *testing.T, dsn string) *SqlitePngRepository {
+	repo, err := NewSqlitePngRepository(dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return repo
 }
