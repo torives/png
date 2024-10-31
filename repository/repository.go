@@ -37,16 +37,25 @@ func NewSqlitePngRepository(dsn string) (*SqlitePngRepository, error) {
 	return &repo, nil
 }
 
+// TODO: change sqlite to another db and see if the sql statements are portable
 var (
-	createTeamsTableSql      = `CREATE TABLE teams(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(3) UNIQUE)`
-	createWorkTypesTableSql  = `CREATE TABLE work_types(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(2) UNIQUE)`
-	createProjectsTableSql   = `CREATE TABLE projects(id INTEGER PRIMARY KEY AUTOINCREMENT, team TEXT NOT NULL, work_type TEXT NOT NULL, FOREIGN KEY(team) REFERENCES teams(name) FOREIGN KEY(work_type) REFERENCES work_types(name))`
+	createTeamsTableSql     = `CREATE TABLE teams(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(3) UNIQUE)`
+	createWorkTypesTableSql = `CREATE TABLE work_types(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(2) UNIQUE)`
+	createProjectsTableSql  = `CREATE TABLE projects(
+									id INTEGER NOT NULL,
+									team TEXT NOT NULL,
+									work_type TEXT NOT NULL,
+									PRIMARY KEY(id, team, work_type)
+									FOREIGN KEY(team) REFERENCES teams(name)
+									FOREIGN KEY(work_type) REFERENCES work_types(name)
+								)`
 	createTeamFkIndexSql     = `CREATE INDEX team_index ON projects(team)`
 	createWorkTypeFkIndexSql = `CREATE INDEX work_type_index ON projects(team)`
 	insertTeamSql            = `INSERT INTO teams VALUES(NULL, $1)`
 	insertWorkTypeSql        = `INSERT INTO work_types VALUES(NULL, $1)`
-	insertProjectSql         = `INSERT INTO projects VALUES(NULL, $1, $2) RETURNING id`
+	insertProjectSql         = `INSERT INTO projects VALUES($1, $2, $3)`
 	//TODO: find out why parameter substitution does not work with SELECT statements
+	selectLastIdSql     = `SELECT id FROM projects WHERE projects.team == $1 AND projects.work_type == $2 ORDER BY id DESC LIMIT 1`
 	listAllTeamsSql     = `SELECT name FROM teams`
 	listAllWorkTypesSql = `SELECT name FROM work_types`
 )
@@ -249,12 +258,18 @@ func (r SqlitePngRepository) CreateNewProject(
 	team model.Team,
 	workType model.WorkType,
 ) (project model.Project, err error) {
-	result, err := r.db.Exec(insertProjectSql, team.Name, workType.Name)
+	rows, err := r.db.Query(selectLastIdSql, team.Name, workType.Name)
 	if err != nil {
 		return project, err
 	}
 
-	id, err := result.LastInsertId()
+	var id int64
+	for rows.Next() {
+		rows.Scan(&id)
+	}
+	id += 1
+
+	_, err = r.db.Exec(insertProjectSql, id, team.Name, workType.Name)
 	if err != nil {
 		return project, err
 	}
