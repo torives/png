@@ -162,6 +162,41 @@ func TestRepository(t *testing.T) {
 			t.Fatalf("expected second id to be %d, but got %d", project1Id+1, project2Id)
 		}
 	})
+
+	t.Run("itIncrementsProjectIdForASpecificTeamAndWorkTypePair", func(t *testing.T) {
+		repo := newSqliteRepository(t, testDsn)
+
+		team1 := model.Team{Name: "FOR"}
+		workType1 := model.WorkType{Name: "MA"}
+		_, err := repo.CreateNewProject(team1, workType1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		project2 := createNewProject(t, repo, team1, workType1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		workType2 := model.WorkType{Name: "ES"}
+		project3 := createNewProject(t, repo, team1, workType2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		p2Id := idFromProject(t, project2)
+		p3Id := idFromProject(t, project3)
+		if p3Id >= p2Id {
+			t.Fatalf("expected id count to reset when changing the worktype")
+		}
+
+		team2 := model.Team{Name: "ANA"}
+		project4 := createNewProject(t, repo, team2, workType1)
+		p4Id := idFromProject(t, project4)
+
+		if p4Id >= p2Id {
+			t.Fatalf("expected id count to reset when changing the team")
+		}
+	})
 }
 
 func idFromProject(t *testing.T, project model.Project) int64 {
