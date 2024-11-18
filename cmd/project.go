@@ -9,4 +9,5 @@ var projectCmd = &cobra.Command{
 
 func init() {
 	projectCmd.AddCommand(addProject)
+	projectCmd.AddCommand(listProjects)
 }

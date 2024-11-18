@@ -9,4 +9,5 @@ var workTypeCmd = &cobra.Command{
 
 func init() {
 	workTypeCmd.AddCommand(listWorkType)
+	workTypeCmd.AddCommand(addWorkType)
 }
