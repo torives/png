@@ -9,4 +9,5 @@ var teamCmd = &cobra.Command{
 
 func init() {
 	teamCmd.AddCommand(listTeams)
+	teamCmd.AddCommand(addTeam)
 }
