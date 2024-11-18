@@ -32,36 +32,4 @@ The database comes preloaded with the following teams and work types:
 
 ## Usage
 
-PNG currently has only three commands: `add`, `list` and `help`. The following sections assume you are executing the commands inside a new Terminal or PowerShell window.
-
-### `add`
-
-The `add` command creates a new project for the given team and worktype. To use it, type:
-
-`png add -t AAA -w BB`
-
-where after `-t` comes the team code and after `-w` comes the work type code.
-
-### `list`
-
-The `list` command lists all teams and work types currently registered. To list all teams type:
-
-`png list teams`
-
-And to list all work types:
-
-`png list worktypes`
-
-### `help`
-
-The `help` command displays a message explaining the commands that are available to you. It can be invoked for the whole program with:
-
-`png help` or `png -h`
-
-but it also can be invoked for each individual command:
-
-`png add help` or `png add -h`
-
-and:
-
-`png list help` or `png list -h`
+If you execute PNG without any parameters it will start in interactive mode, prompting the user for actions to take. Commands can also be invoked directly via its CLI API. Check the help page (`png -h` or `png --help`) for more information on the availabe options.

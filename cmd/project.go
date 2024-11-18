@@ -4,7 +4,8 @@ import "github.com/spf13/cobra"
 
 var projectCmd = &cobra.Command{
 	Use:   "project {add | list}",
-	Short: "Creates a new project or lists existing ones",
+	Short: "create a new project or list existing ones",
+	Long:  "Creates a new project or list existing ones",
 }
 
 func init() {

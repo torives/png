@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added an interactive prompt, activated when the program receives no parameters.
+
 ### Changed
 
 - Changed the CLI to subcommands. `add` and `list` are now subcommands of `project`, `team` and `worktype`.

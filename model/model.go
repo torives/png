@@ -3,13 +3,14 @@ package model
 import (
 	"errors"
 	"fmt"
-	"os"
+	"log"
 	"regexp"
 )
 
 var (
-	ErrInvalidTeam         = errors.New("invalid team name")
+	ErrInvalidTeamName     = errors.New("invalid team name")
 	ErrInvalidWorkTypeName = errors.New("invalid work type name")
+	ErrInvalidProjectId    = errors.New("invalid project id")
 	teamNameRegex          = "^[A-Z]{3}$"
 	workTypeNameRegex      = "^[A-Z]{2}$"
 )
@@ -18,56 +19,73 @@ type Team struct {
 	Name string
 }
 
-func NewTeam(name string) (Team, error) {
-	if isValidTeamName(name) {
-		return Team{name}, nil
+func NewTeam(name string) (*Team, error) {
+	if err := ValidateTeamName(name); err != nil {
+		return nil, err
 	}
-	return Team{}, ErrInvalidTeam
+	return &Team{Name: name}, nil
 }
 
 func (t Team) String() string {
 	return t.Name
 }
 
-func isValidTeamName(name string) bool {
-	match, err := regexp.MatchString(teamNameRegex, name)
+func ValidateTeamName(name string) error {
+	matched, err := regexp.MatchString(teamNameRegex, name)
+	// invalid regex.MatchString invocation, should never happen
 	if err != nil {
-		fmt.Printf("model: failed to validate team name. %s", err)
-		os.Exit(1)
+		log.Fatal(fmt.Errorf("model: failed to validate team name: %w", err))
 	}
-	return match
+
+	if !matched {
+		return ErrInvalidTeamName
+	}
+	return nil
 }
 
 type WorkType struct {
 	Name string
 }
 
-func NewWorkType(name string) (WorkType, error) {
-	if isValidWorkTypeName(name) {
-		return WorkType{name}, nil
+func NewWorkType(name string) (*WorkType, error) {
+	if err := ValidateWorkTypeName(name); err != nil {
+		return nil, err
 	}
-	return WorkType{}, ErrInvalidWorkTypeName
+	return &WorkType{Name: name}, nil
 }
 
 func (wt WorkType) String() string {
 	return wt.Name
 }
 
-func isValidWorkTypeName(name string) bool {
-	match, err := regexp.MatchString(workTypeNameRegex, name)
+func ValidateWorkTypeName(name string) error {
+	matched, err := regexp.MatchString(workTypeNameRegex, name)
+	// invalid regex.MatchString invocation, should never happen
 	if err != nil {
-		fmt.Printf("model: failed to validate workType name: %s", err)
-		os.Exit(1)
+		log.Fatal(fmt.Errorf("model: failed to validate work type name: %w", err))
 	}
-	return match
+
+	if !matched {
+		return ErrInvalidWorkTypeName
+	}
+	return nil
 }
 
 type Project struct {
 	Name string
 }
 
-func NewProject(id int64, team string, workType string) Project {
-	return Project{fmt.Sprintf("%s-%s-%d", team, workType, id)}
+func NewProject(id int64, team string, workType string) (*Project, error) {
+	if err := ValidateTeamName(team); err != nil {
+		return nil, err
+	}
+	if err := ValidateWorkTypeName(workType); err != nil {
+		return nil, err
+	}
+	if id < 0 {
+		return nil, ErrInvalidProjectId
+	}
+	return &Project{fmt.Sprintf("%s-%s-%d", team, workType, id)}, nil
 }
 
 func (p Project) String() string {
