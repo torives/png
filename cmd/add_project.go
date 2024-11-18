@@ -19,16 +19,13 @@ var (
 	ErrWorkTypeNotFound = errors.New("worktype not found")
 )
 
-// add represents the new command
-var add = &cobra.Command{
+var addProject = &cobra.Command{
 	Use:   "add [-t | --team] TEAM [-w | --worktype] WORKTYPE",
-	Short: "Creates a new project for the given team and worktype",
-	//TODO: add long description
-	Long: ``,
-	Run:  runAdd,
+	Short: "Creates a new project",
+	Run:   runAddProject,
 }
 
-func runAdd(cmd *cobra.Command, args []string) {
+func runAddProject(cmd *cobra.Command, args []string) {
 	repo, err := repository.NewSqlitePngRepository(databaseDsn)
 	if err != nil {
 		fmt.Printf("failed to open database. %s\n", err)
@@ -93,8 +90,6 @@ func validateWorkType(repo repository.PngRepository) error {
 }
 
 func init() {
-	rootCmd.AddCommand(add)
-
-	add.Flags().StringVarP(&team, "team", "t", "", "The team responsible for the project")
-	add.Flags().StringVarP(&workType, "worktype", "w", "", "The project's type of work")
+	addProject.Flags().StringVarP(&team, "team", "t", "", "the team responsible for the project")
+	addProject.Flags().StringVarP(&workType, "worktype", "w", "", "the project's type of work")
 }
