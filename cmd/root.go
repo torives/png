@@ -28,4 +28,8 @@ func Execute() {
 func init() {
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
+	rootCmd.AddCommand(projectCmd)
+	rootCmd.AddCommand(teamCmd)
+	rootCmd.AddCommand(workTypeCmd)
 }

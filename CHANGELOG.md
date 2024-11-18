@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Changed the CLI to subcommands. `add` and `list` are now subcommands of `project`, `team` and `worktype`.
+
 ### Fixed
 
 - Fixed bug where the project id number was shared between different projects.
