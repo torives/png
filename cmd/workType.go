@@ -4,10 +4,11 @@ import "github.com/spf13/cobra"
 
 var workTypeCmd = &cobra.Command{
 	Use:   "worktype {add | list}",
-	Short: "Creates a new work type or lists existing ones",
+	Short: "create a new work type or list existing ones",
+	Long:  "Creates a new work type or list existing ones",
 }
 
 func init() {
-	workTypeCmd.AddCommand(listWorkType)
+	workTypeCmd.AddCommand(listWorkTypes)
 	workTypeCmd.AddCommand(addWorkType)
 }

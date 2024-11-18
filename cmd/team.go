@@ -4,7 +4,8 @@ import "github.com/spf13/cobra"
 
 var teamCmd = &cobra.Command{
 	Use:   "team {add | list}",
-	Short: "Creates a new team or lists existing ones",
+	Short: "create a new team or list existing ones",
+	Long:  "Creates a new team or list existing ones",
 }
 
 func init() {

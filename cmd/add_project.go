@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/torives/png/model"
@@ -13,80 +12,62 @@ import (
 var (
 	team                string
 	workType            string
-	ErrMissingTeam      = errors.New("missing team parameter")
 	ErrTeamNotFound     = errors.New("team not found")
-	ErrMissingWorkType  = errors.New("missing worktype parameter")
-	ErrWorkTypeNotFound = errors.New("worktype not found")
+	ErrWorkTypeNotFound = errors.New("work type not found")
 )
 
 var addProject = &cobra.Command{
-	Use:   "add [-t | --team] TEAM [-w | --worktype] WORKTYPE",
-	Short: "Creates a new project",
-	Run:   runAddProject,
+	Use:   "add {-t | --team} TEAM {-w | --worktype} WORKTYPE",
+	Short: "add a new project",
+	Long: `Adds a new project. A project has a responsible team and a type of 
+work and both are reflected in its name. All project names follow the template 
+[AAA-BB-#], where:
+  AAA - the code for the team. Check "png team add" command for more info.
+  BB - the code for the work type. Check "png worktype add" command for more 
+info.
+  # - an ever-increasing integer number that uniquely identifies that project.
+
+Examples:
+  png project add -t FOR -w PP
+  png project add --team FOR --worktype PP`,
+	RunE: runAddProject,
 }
 
-func runAddProject(cmd *cobra.Command, args []string) {
+func runAddProject(cmd *cobra.Command, args []string) error {
 	repo, err := repository.NewSqlitePngRepository(databaseDsn)
 	if err != nil {
-		fmt.Printf("failed to open database. %s\n", err)
-		os.Exit(1)
+		return ErrOpenDatabase{err}
 	}
 
-	if err = validateTeam(repo); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	if err = validateWorkType(repo); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	project, err := repo.CreateNewProject(model.Team{Name: team}, model.WorkType{Name: workType})
-	if err != nil {
-		fmt.Printf("failed to create project. %s\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Println(project)
-}
-
-func validateTeam(repo repository.PngRepository) error {
-	if team == "" {
-		return ErrMissingTeam
-	}
-
-	//TODO: add repo.GetTeam() method
-	teams, err := repo.ListTeams()
-	if err != nil {
+	if err := model.ValidateTeamName(team); err != nil {
 		return err
 	}
 
-	for _, storedTeam := range teams {
-		if storedTeam.Name == team {
-			return nil
-		}
-	}
-	return ErrTeamNotFound
-}
-
-func validateWorkType(repo repository.PngRepository) error {
-	if workType == "" {
-		return ErrMissingWorkType
-	}
-
-	//TODO: add repo.GetWorkType() method
-	workTypes, err := repo.ListWorkTypes()
+	team, err := repo.GetTeam(team)
 	if err != nil {
+		return err
+	} else if team == nil {
+		return ErrTeamNotFound
+	}
+
+	if err := model.ValidateWorkTypeName(workType); err != nil {
 		return err
 	}
 
-	for _, storedWorkType := range workTypes {
-		if storedWorkType.Name == workType {
-			return nil
-		}
+	workType, err := repo.GetWorkType(workType)
+	if err != nil {
+		return err
+	} else if workType == nil {
+		return ErrWorkTypeNotFound
 	}
-	return ErrWorkTypeNotFound
+
+	project, err := repo.CreateNewProject(*team, *workType)
+	if err != nil {
+		return fmt.Errorf("failed to create project: %w\n", err)
+	}
+
+	fmt.Printf("Project %v was created\n", project)
+	return nil
 }
 
 func init() {

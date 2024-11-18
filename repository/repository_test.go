@@ -80,8 +80,38 @@ func TestRepository(t *testing.T) {
 
 		team := model.Team{Name: "FOR"}
 		err := repo.InsertTeam(team)
-		if err == nil {
-			t.Fatalf("unexpected success. %s", err)
+		if err != ErrDuplicatedName {
+			t.Fatalf("unexpected error. %s", err)
+		}
+	})
+
+	t.Run("itGetsATeam", func(t *testing.T) {
+		repo := newSqliteRepository(t, testDsn)
+
+		expectedTeam := model.Team{Name: "AAA"}
+		team, err := repo.GetTeam(expectedTeam.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if team != nil {
+			t.Fatalf("expected team to be nil, but got: %s", team.Name)
+		}
+
+		err = repo.InsertTeam(expectedTeam)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		team, err = repo.GetTeam(expectedTeam.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if team == nil {
+			t.Fatalf("expected team to be: %s, but got: %s", team.Name, team)
+		}
+
+		if team.Name != expectedTeam.Name {
+			t.Fatalf("expected to find team %s", expectedTeam.Name)
 		}
 	})
 
@@ -116,8 +146,39 @@ func TestRepository(t *testing.T) {
 
 		workType := model.WorkType{Name: "MA"}
 		err := repo.InsertWorkType(workType)
-		if err == nil {
-			t.Fatal("expected insertion of duplicate worktype to fail, but it did not")
+		if err != ErrDuplicatedName {
+			t.Fatalf("unexpected error. %s", err)
+		}
+	})
+
+	t.Run("itGetsAWorkType", func(t *testing.T) {
+		repo := newSqliteRepository(t, testDsn)
+
+		expectedWorkType := model.WorkType{Name: "AA"}
+		workType, err := repo.GetWorkType(expectedWorkType.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if workType != nil {
+			t.Fatalf("expected work type to be nil, but got: %s", workType.Name)
+		}
+
+		err = repo.InsertWorkType(expectedWorkType)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		workType, err = repo.GetWorkType(expectedWorkType.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if workType == nil {
+			t.Fatalf("expected work type to be: %s, but got: %s", expectedWorkType.Name, workType)
+		}
+
+		if workType.Name != expectedWorkType.Name {
+			t.Fatalf("expected to find work type %s", expectedWorkType.Name)
 		}
 	})
 
@@ -195,6 +256,39 @@ func TestRepository(t *testing.T) {
 
 		if p4Id >= p2Id {
 			t.Fatalf("expected id count to reset when changing the team")
+		}
+	})
+
+	t.Run("itListsAllProjects", func(t *testing.T) {
+		repo := newSqliteRepository(t, testDsn)
+
+		p1, err := repo.CreateNewProject(model.Team{Name: "FOR"}, model.WorkType{Name: "MA"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		p2, err := repo.CreateNewProject(model.Team{Name: "FOR"}, model.WorkType{Name: "MA"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		p3, err := repo.CreateNewProject(model.Team{Name: "ANA"}, model.WorkType{Name: "PP"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		projects, err := repo.ListProjects()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(projects) != 3 {
+			t.Fatalf("expected 3 projects, got %d", len(projects))
+		}
+
+		for _, project := range projects {
+			if project.Name == p1.Name || project.Name == p2.Name || project.Name == p3.Name {
+				continue
+			}
+			t.Fatalf("expected project %s to be one of %v", project.Name, []string{p1.Name, p2.Name, p3.Name})
 		}
 	})
 }

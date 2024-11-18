@@ -6,28 +6,31 @@ import (
 
 type testCase struct {
 	name           string
-	expectedResult bool
+	expectedResult error
 }
 
 var teamTestCases = []testCase{
-	{"AAA", true}, {"AGM", true}, {"ZZZ", true}, {"AZA", true}, {"aAA", false},
-	{"AaA", false}, {"AAa", false}, {"AZ1", false}, {"", false}, {"AZ ", false},
-	{" AZ", false}, {"A-Z", false}, {"A*Z", false}, {"AZ(", false},
-	{"AZHG", false}, {"AA A", false}, {"103", false}, {"treta", false},
-	{"jjj", false},
+	{"AAA", nil}, {"AGM", nil}, {"ZZZ", nil}, {"AZA", nil}, {"aAA", ErrInvalidTeamName},
+	{"AaA", ErrInvalidTeamName}, {"AAa", ErrInvalidTeamName}, {"AZ1", ErrInvalidTeamName},
+	{"", ErrInvalidTeamName}, {"AZ ", ErrInvalidTeamName}, {" AZ", ErrInvalidTeamName},
+	{"A-Z", ErrInvalidTeamName}, {"A*Z", ErrInvalidTeamName}, {"AZ(", ErrInvalidTeamName},
+	{"AZHG", ErrInvalidTeamName}, {"AA A", ErrInvalidTeamName}, {"103", ErrInvalidTeamName},
+	{"treta", ErrInvalidTeamName}, {"jjj", ErrInvalidTeamName},
 }
 
 var workTypeTestCases = []testCase{
-	{"AA", true}, {"AG", true}, {"ZZ", true}, {"AZ", true}, {"JJ", true},
-	{"aA", false}, {"Aa", false}, {"A1", false}, {"", false}, {"A ", false},
-	{" Z", false}, {"A-", false}, {"*Z", false}, {"Z(", false}, {"AZHG", false},
-	{"  ", false}, {"10", false}, {"treta", false}, {"jj", false},
+	{"AA", nil}, {"AG", nil}, {"ZZ", nil}, {"AZ", nil}, {"JJ", nil},
+	{"aA", ErrInvalidWorkTypeName}, {"Aa", ErrInvalidWorkTypeName}, {"A1", ErrInvalidWorkTypeName},
+	{"", ErrInvalidWorkTypeName}, {"A ", ErrInvalidWorkTypeName}, {" Z", ErrInvalidWorkTypeName},
+	{"A-", ErrInvalidWorkTypeName}, {"*Z", ErrInvalidWorkTypeName}, {"Z(", ErrInvalidWorkTypeName},
+	{"AZHG", ErrInvalidWorkTypeName}, {"  ", ErrInvalidWorkTypeName}, {"10", ErrInvalidWorkTypeName},
+	{"treta", ErrInvalidWorkTypeName}, {"jj", ErrInvalidWorkTypeName},
 }
 
 func TestTeam(t *testing.T) {
 	t.Run("isValidName", func(t *testing.T) {
 		for _, tc := range teamTestCases {
-			result := isValidTeamName(tc.name)
+			result := ValidateTeamName(tc.name)
 			if result != tc.expectedResult {
 				t.Logf(`expected name "%s" to be %v, but got %v`, tc.name, tc.expectedResult, result)
 				t.Fail()
@@ -39,7 +42,7 @@ func TestTeam(t *testing.T) {
 func TestWorkType(t *testing.T) {
 	t.Run("isValidName", func(t *testing.T) {
 		for _, tc := range workTypeTestCases {
-			result := isValidWorkTypeName(tc.name)
+			result := ValidateWorkTypeName(tc.name)
 			if result != tc.expectedResult {
 				t.Logf(`expected name "%s" to be %v, but got %v`, tc.name, tc.expectedResult, result)
 				t.Fail()

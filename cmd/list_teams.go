@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/torives/png/repository"
@@ -10,22 +9,23 @@ import (
 
 var listTeams = &cobra.Command{
 	Use:   "list",
-	Short: "Lists all teams",
-	Run:   runListTeams,
+	Short: "list all teams",
+	Long:  "Lists all teams in no particular order",
+	RunE:  runListTeams,
 }
 
-func runListTeams(cmd *cobra.Command, args []string) {
+func runListTeams(cmd *cobra.Command, args []string) error {
 	repo, err := repository.NewSqlitePngRepository(databaseDsn)
 	if err != nil {
-		fmt.Printf("failed to open database. %s\n", err)
-		os.Exit(1)
+		return ErrOpenDatabase{err}
 	}
 
 	teams, err := repo.ListTeams()
 	if err != nil {
-		fmt.Printf("failed to list teams. %s\n", err)
+		fmt.Printf("failed to list teams: %s\n", err)
 	}
 	for _, team := range teams {
 		fmt.Println(team)
 	}
+	return nil
 }

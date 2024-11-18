@@ -4,15 +4,22 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/torives/png/model"
 	"modernc.org/sqlite"
 )
 
+var (
+	ErrDuplicatedName = errors.New("duplicated name")
+)
+
 type PngRepository interface {
 	InsertTeam(team model.Team) error
+	GetTeam(name string) (team *model.Team, err error)
 	ListTeams() (teams []model.Team, err error)
 	InsertWorkType(workType model.WorkType) error
+	GetWorkType(name string) (workType *model.WorkType, err error)
 	ListWorkTypes() (workTypes []model.WorkType, err error)
 	CreateNewProject(team model.Team, workType model.WorkType) (project model.Project, err error)
 }
@@ -58,6 +65,9 @@ var (
 	selectLastIdSql     = `SELECT id FROM projects WHERE projects.team == $1 AND projects.work_type == $2 ORDER BY id DESC LIMIT 1`
 	listAllTeamsSql     = `SELECT name FROM teams`
 	listAllWorkTypesSql = `SELECT name FROM work_types`
+	listAllProjectsSql  = `SELECT id, team, work_type FROM projects`
+	getTeamSql          = `SELECT name FROM teams WHERE teams.name == $1`
+	getWorkTypeSql      = `SELECT name FROM work_types WHERE work_types.name == $1`
 )
 
 // FIXME: add migrations file/tooling
@@ -208,10 +218,29 @@ func (r SqlitePngRepository) insertInitialData() error {
 
 func (r SqlitePngRepository) InsertTeam(team model.Team) error {
 	_, err := r.db.Exec(insertTeamSql, team.Name)
-	if err != nil {
+
+	var sqliteErr *sqlite.Error
+	if errors.As(err, &sqliteErr) && sqliteErr.Code() == 2067 {
+		return ErrDuplicatedName
+	} else if err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func (r SqlitePngRepository) GetTeam(name string) (team *model.Team, err error) {
+	row := r.db.QueryRow(getTeamSql, name)
+	var teamName string
+
+	if err := row.Scan(&teamName); err != nil {
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &model.Team{Name: teamName}, nil
 }
 
 func (r SqlitePngRepository) ListTeams() (teams []model.Team, err error) {
@@ -232,10 +261,29 @@ func (r SqlitePngRepository) ListTeams() (teams []model.Team, err error) {
 
 func (r SqlitePngRepository) InsertWorkType(workType model.WorkType) error {
 	_, err := r.db.Exec(insertWorkTypeSql, workType.Name)
-	if err != nil {
+
+	var sqliteErr *sqlite.Error
+	if errors.As(err, &sqliteErr) && sqliteErr.Code() == 2067 {
+		return ErrDuplicatedName
+	} else if err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func (r SqlitePngRepository) GetWorkType(name string) (workType *model.WorkType, err error) {
+	row := r.db.QueryRow(getWorkTypeSql, name)
+	var workTypeName string
+
+	if err := row.Scan(&workTypeName); err != nil {
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &model.WorkType{Name: workTypeName}, nil
 }
 
 func (r SqlitePngRepository) ListWorkTypes() (workTypes []model.WorkType, err error) {
@@ -274,5 +322,33 @@ func (r SqlitePngRepository) CreateNewProject(
 		return project, err
 	}
 
-	return model.NewProject(id, team.Name, workType.Name), nil
+	p, err := model.NewProject(id, team.Name, workType.Name)
+	if err != nil {
+		return model.Project{}, err
+	}
+
+	return *p, err
+}
+
+func (r SqlitePngRepository) ListProjects() (projects []model.Project, err error) {
+	rows, err := r.db.Query(listAllProjectsSql)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		id             int64
+		team, workType string
+	)
+	for rows.Next() {
+		if err := rows.Scan(&id, &team, &workType); err != nil {
+			return nil, err
+		}
+		project, err := model.NewProject(id, team, workType)
+		if err != nil {
+			return nil, err
+		}
+		projects = append(projects, *project)
+	}
+	return projects, err
 }
