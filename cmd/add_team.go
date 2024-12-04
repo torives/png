@@ -30,7 +30,7 @@ func runAddTeam(cmd *cobra.Command, args []string) error {
 		return ErrMissingNameParameter
 	}
 
-	repo, err := repository.NewSqlitePngRepository(defaultDatabaseDsn)
+	repo, err := repository.NewSqlitePngRepository(databaseDsn)
 	if err != nil {
 		return ErrOpenDatabase{err}
 	}

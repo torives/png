@@ -15,7 +15,7 @@ var listProjects = &cobra.Command{
 }
 
 func runListProjects(cmd *cobra.Command, args []string) error {
-	repo, err := repository.NewSqlitePngRepository(defaultDatabaseDsn)
+	repo, err := repository.NewSqlitePngRepository(databaseDsn)
 	if err != nil {
 		return ErrOpenDatabase{err}
 	}
