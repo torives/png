@@ -13,9 +13,7 @@ import (
 	"github.com/torives/png/model"
 )
 
-//FIXME: refactor "project" references to make it clear that it is a report sheet code for a project
-
-var databaseDsn = "file:png.sqlite"
+var DATABASE_PATH string
 
 type ErrOpenDatabase struct {
 	dbErr error
@@ -138,7 +136,13 @@ func init() {
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
+	rootCmd.PersistentFlags().StringVar(&DATABASE_PATH, "db", "png.sqlite", "path to a database file")
+
 	rootCmd.AddCommand(projectCmd)
 	rootCmd.AddCommand(teamCmd)
 	rootCmd.AddCommand(workTypeCmd)
+}
+
+func getDatabaseDsn() string {
+	return "file:" + databasePath
 }

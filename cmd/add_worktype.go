@@ -26,7 +26,7 @@ func runAddWorkType(cmd *cobra.Command, args []string) error {
 		return ErrMissingNameParameter
 	}
 
-	repo, err := repository.NewSqlitePngRepository(databaseDsn)
+	repo, err := repository.NewSqlitePngRepository(getDatabaseDsn())
 	if err != nil {
 		return ErrOpenDatabase{err}
 	}

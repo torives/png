@@ -34,7 +34,7 @@ Examples:
 }
 
 func runAddProject(cmd *cobra.Command, args []string) error {
-	repo, err := repository.NewSqlitePngRepository(databaseDsn)
+	repo, err := repository.NewSqlitePngRepository(getDatabaseDsn())
 	if err != nil {
 		return ErrOpenDatabase{err}
 	}

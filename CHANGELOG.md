@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added an interactive prompt, activated when the program receives no parameters.
+- Added "db" flag to allow commands to be executed in another database.
 
 ### Changed
 
