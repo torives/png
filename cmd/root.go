@@ -15,7 +15,7 @@ import (
 
 //FIXME: refactor "project" references to make it clear that it is a report sheet code for a project
 
-var databaseDsn = "file:png.sqlite"
+var defaultDatabaseDsn = "file:png.sqlite"
 
 type ErrOpenDatabase struct {
 	dbErr error
