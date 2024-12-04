@@ -2,16 +2,26 @@ package repository
 
 import (
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/golang-migrate/migrate/v4"
+	sqliteDriver "github.com/golang-migrate/migrate/v4/database/sqlite"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/torives/png/model"
 	"modernc.org/sqlite"
 )
 
+//go:embed migrations/*.sql
+var migrations embed.FS
+
 var (
 	ErrDuplicatedName = errors.New("duplicated name")
+
+	DB_NAME = "png"
 )
 
 type PngRepository interface {
@@ -36,7 +46,7 @@ func NewSqlitePngRepository(dsn string) (*SqlitePngRepository, error) {
 	}
 
 	repo := SqlitePngRepository{db}
-	err = repo.insertInitialData()
+	err = repo.runMigrations()
 	if err != nil {
 		return nil, err
 	}
@@ -44,23 +54,10 @@ func NewSqlitePngRepository(dsn string) (*SqlitePngRepository, error) {
 	return &repo, nil
 }
 
-// TODO: change sqlite to another db and see if the sql statements are portable
 var (
-	createTeamsTableSql     = `CREATE TABLE teams(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(3) UNIQUE)`
-	createWorkTypesTableSql = `CREATE TABLE work_types(id INTEGER PRIMARY KEY NOT NULL, name VARCHAR(2) UNIQUE)`
-	createProjectsTableSql  = `CREATE TABLE projects(
-									id INTEGER NOT NULL,
-									team TEXT NOT NULL,
-									work_type TEXT NOT NULL,
-									PRIMARY KEY(id, team, work_type)
-									FOREIGN KEY(team) REFERENCES teams(name)
-									FOREIGN KEY(work_type) REFERENCES work_types(name)
-								)`
-	createTeamFkIndexSql     = `CREATE INDEX team_index ON projects(team)`
-	createWorkTypeFkIndexSql = `CREATE INDEX work_type_index ON projects(team)`
-	insertTeamSql            = `INSERT INTO teams VALUES(NULL, $1)`
-	insertWorkTypeSql        = `INSERT INTO work_types VALUES(NULL, $1)`
-	insertProjectSql         = `INSERT INTO projects VALUES($1, $2, $3)`
+	insertTeamSql     = `INSERT INTO teams VALUES(NULL, $1)`
+	insertWorkTypeSql = `INSERT INTO work_types VALUES(NULL, $1)`
+	insertProjectSql  = `INSERT INTO projects VALUES($1, $2, $3)`
 	//TODO: find out why parameter substitution does not work with SELECT statements
 	selectLastIdSql     = `SELECT id FROM projects WHERE projects.team == $1 AND projects.work_type == $2 ORDER BY id DESC LIMIT 1`
 	listAllTeamsSql     = `SELECT name FROM teams`
@@ -70,150 +67,28 @@ var (
 	getWorkTypeSql      = `SELECT name FROM work_types WHERE work_types.name == $1`
 )
 
-// FIXME: add migrations file/tooling
-func (r SqlitePngRepository) insertInitialData() error {
-	tx, err := r.db.Begin()
+func (r SqlitePngRepository) runMigrations() error {
+	driver, err := sqliteDriver.WithInstance(r.db, &sqliteDriver.Config{DatabaseName: DB_NAME})
+	if err != nil {
+		return fmt.Errorf("migration failed: %w", err)
+	}
+
+	source, err := iofs.New(migrations, "migrations")
 	if err != nil {
 		return err
 	}
 
-	var sqlErr *sqlite.Error
-
-	//create tables
-	_, err = tx.Exec(createTeamsTableSql)
+	migration, err := migrate.NewWithInstance("iofs", source, DB_NAME, driver)
 	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(createWorkTypesTableSql)
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(createProjectsTableSql)
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
+		return fmt.Errorf("migration failed: %w", err)
 	}
 
-	// create indexes
-	_, err = tx.Exec(createTeamFkIndexSql)
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(createWorkTypeFkIndexSql)
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 1 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
+	err = migration.Up()
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return err
 	}
 
-	// populate teams table
-	_, err = tx.Exec(insertTeamSql, "FOR")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertTeamSql, "ANA")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertTeamSql, "MIC")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertTeamSql, "PRO")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-
-	// populate work_type table
-	_, err = tx.Exec(insertWorkTypeSql, "MA")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertWorkTypeSql, "ES")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertWorkTypeSql, "IC")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertWorkTypeSql, "PT")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-	_, err = tx.Exec(insertWorkTypeSql, "PP")
-	if err != nil {
-		if !errors.As(err, &sqlErr) || sqlErr.Code() != 2067 {
-			return errors.Join(
-				fmt.Errorf("tx exec: %w", err),
-				tx.Rollback(),
-			)
-		}
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (r SqlitePngRepository) InsertTeam(team model.Team) error {

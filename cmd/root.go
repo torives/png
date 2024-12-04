@@ -144,5 +144,5 @@ func init() {
 }
 
 func getDatabaseDsn() string {
-	return "file:" + databasePath
+	return "file:" + DATABASE_PATH
 }
