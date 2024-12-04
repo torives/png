@@ -15,7 +15,7 @@ import (
 
 //FIXME: refactor "project" references to make it clear that it is a report sheet code for a project
 
-var databaseDsn = "file:png.sqlite"
+var databasePath string
 
 type ErrOpenDatabase struct {
 	dbErr error
@@ -138,7 +138,13 @@ func init() {
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
+	rootCmd.PersistentFlags().StringVar(&databasePath, "db", "png.sqlite", "")
+
 	rootCmd.AddCommand(projectCmd)
 	rootCmd.AddCommand(teamCmd)
 	rootCmd.AddCommand(workTypeCmd)
+}
+
+func getDatabaseDsn() string {
+	return "file:" + databasePath
 }

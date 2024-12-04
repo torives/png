@@ -1,6 +1,8 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 var projectCmd = &cobra.Command{
 	Use:   "project {add | list}",
@@ -8,7 +10,12 @@ var projectCmd = &cobra.Command{
 	Long:  "Creates a new project or list existing ones",
 }
 
+var treta int
+
 func init() {
+
+	
+
 	projectCmd.AddCommand(addProject)
 	projectCmd.AddCommand(listProjects)
 }
