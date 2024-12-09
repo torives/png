@@ -1,9 +1,7 @@
-DROP TABLE IF EXISTS teams
+DROP TABLE IF EXISTS projects;
 
-DROP TABLE IF EXISTS work_types
+DROP INDEX IF EXISTS team_index;
+DROP TABLE IF EXISTS teams;
 
-DROP TABLE IF EXISTS projects
-
-DROP INDEX IF EXISTS team_index
-	
-DROP INDEX IF EXISTS work_type_index
+DROP INDEX IF EXISTS work_type_index;
+DROP TABLE IF EXISTS work_types;
