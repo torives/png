@@ -22,7 +22,7 @@ The database comes preloaded with the following teams and work types:
   - PT
   - PP
 
-## Instalation
+## Installation
 
 ### Windows
 
